@@ -18,21 +18,16 @@
 
 ## 技术栈
 
-```
-                       ┌─────────────┐
-           nginx  ─▶   │  frontend   │   Next.js 14 (App Router) + Tailwind + Apple tokens
-   :18080  ─┬──▶      └─────────────┘
-            │         ┌─────────────┐
-            └──▶      │  backend    │   FastAPI + SQLAlchemy 2 + Pydantic v2
-                      └──────┬──────┘
-                             │
-                      ┌──────┴──────┐    周期摄取（默认 08/12/18 时）
-                      │   worker    │    可由 /api/admin/refresh 手动触发
-                      └──────┬──────┘
-                             │
-                      ┌──────┴──────┐
-                      │  postgres 16 │
-                      └─────────────┘
+```mermaid
+flowchart LR
+    U[用户浏览器] -->|:18080| N[nginx 1.27]
+    N -->|/| F[frontend<br/>Next.js 14 + Tailwind]
+    N -->|/api| B[backend<br/>FastAPI + SQLAlchemy 2]
+    W[worker<br/>周期摄取 08/12/18 时] --> B
+    W --> LLM[(LLM API<br/>GLM5 / DeepSeek / MiniMax)]
+    B --> LLM
+    B --> DB[(postgres 16)]
+    W --> DB
 ```
 
 - 部署：Docker Compose；backend / worker 源码**bind-mount**，日常 Python 改动无需 rebuild，重启即可（~5 秒）
