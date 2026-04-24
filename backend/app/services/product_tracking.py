@@ -42,7 +42,7 @@ class ProductBackfillResult:
         self.created_timeline_events = created_timeline_events
 
 
-BACKFILL_DEADLINE_SECONDS = 180
+BACKFILL_DEADLINE_SECONDS = 420  # LLM timeline extraction is ~25s per linked news item; 5 items × 25s + overhead fits here.
 
 
 def _deadline_enforcer(product_id: int, done_event: threading.Event) -> None:
@@ -826,7 +826,9 @@ def _extract_timeline_events(db: Session, product: TrackedProduct, glm5: GLM5Cli
     event_count = 0
     glm5_extraction_count = 0
     fallback_events_count = 0
+    import time as _time
     for item in linked_news:
+        _t0 = _time.monotonic()
         try:
             extraction = glm5.extract_product_timeline(
                 product_name=product.display_name,
@@ -835,6 +837,15 @@ def _extract_timeline_events(db: Session, product: TrackedProduct, glm5: GLM5Cli
                 indications=product.indications or [],
                 title=item.title,
                 content_text=item.content_text or item.short_summary or item.title,
+            )
+            logger.info(
+                "product timeline glm5 extraction item done",
+                extra={
+                    "product_slug": product.slug,
+                    "news_item_id": item.id,
+                    "duration_s": round(_time.monotonic() - _t0, 2),
+                    "events": len(extraction.events) if extraction else 0,
+                },
             )
         except Exception as exc:  # noqa: BLE001
             logger.warning(
