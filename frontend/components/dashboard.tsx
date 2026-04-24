@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { SkeletonCard } from "@/components/skeleton-card";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TopNav } from "@/components/top-nav";
-import type { CategoriesResponse, ModelInfo, ModelsResponse, NewsListResponse, TodaySummaryResponse } from "@/lib/types";
+import type { CategoriesResponse, ModelInfo, ModelsResponse, NewsItem, NewsListResponse, TodaySummaryResponse } from "@/lib/types";
 
 type LoadState = "idle" | "loading" | "ready" | "error";
 
@@ -61,6 +61,8 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [selectedSummaryCategory, setSelectedSummaryCategory] = useState<string | null>(null);
+  const [categoryFallbackItems, setCategoryFallbackItems] = useState<NewsItem[]>([]);
+  const [categoryFallbackLoading, setCategoryFallbackLoading] = useState(false);
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [currentModel, setCurrentModel] = useState<string>("");
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
@@ -155,6 +157,43 @@ export function Dashboard() {
     window.addEventListener("resize", compute);
     return () => window.removeEventListener("resize", compute);
   }, [selectedSummaryCategory]);
+
+  // Fallback: when LLM's top_events for the selected category is empty,
+  // fetch the 5 most recent news items with that category so the bubble
+  // never renders a "no events" dead-end when a category_summary exists.
+  useEffect(() => {
+    if (!selectedSummaryCategory || !summary) {
+      setCategoryFallbackItems([]);
+      return;
+    }
+    const hasTopEvents = summary.top_events.some((e) => e.category === selectedSummaryCategory);
+    if (hasTopEvents) {
+      setCategoryFallbackItems([]);
+      return;
+    }
+    let cancelled = false;
+    setCategoryFallbackLoading(true);
+    const params = new URLSearchParams({
+      category: selectedSummaryCategory,
+      page_size: "5",
+      sort: "published_at_desc",
+    });
+    if (selectedDate) params.set("date", selectedDate);
+    fetch(`${API_BASE_PATH}/news?${params.toString()}`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
+      .then((data: NewsListResponse) => {
+        if (!cancelled) setCategoryFallbackItems(data.items ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setCategoryFallbackItems([]);
+      })
+      .finally(() => {
+        if (!cancelled) setCategoryFallbackLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSummaryCategory, summary, selectedDate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -464,36 +503,55 @@ export function Dashboard() {
                 >
                   {selectedSummaryCategory ? (
                     <>
-                      <div className="mb-4 flex items-center justify-between">
-                        <p className="font-display text-xs font-semibold uppercase tracking-wide text-apple-linkDark">
-                          {selectedSummaryCategory} events
-                        </p>
-                        <span className="text-[11px] font-medium text-white/40">
-                          {summary.top_events.filter((e) => e.category === selectedSummaryCategory).length}
-                        </span>
-                      </div>
-                      <ol key={selectedSummaryCategory} className="max-h-[60vh] space-y-3 overflow-y-auto animate-fade-in">
-                        {summary.top_events.filter((e) => e.category === selectedSummaryCategory).map((event) => (
-                          <li key={`${event.title}-${event.canonical_url}`} className="rounded-lg bg-apple-darkSurface3 p-3 transition-colors hover:bg-black/40">
-                            <a
-                              className="text-left text-sm font-medium leading-[1.43] text-white hover:text-apple-linkDark"
-                              href={event.canonical_url}
-                              rel="noreferrer"
-                              target="_blank"
-                            >
-                              {event.title}
-                            </a>
-                            <div className="mt-2 flex flex-wrap items-center gap-2">
-                              <Badge variant="secondary">{event.category}</Badge>
-                              {event.source_name ? <span className="text-xs text-white/60">{event.source_name}</span> : null}
-                              {event.published_at ? <span className="text-xs text-white/40">{formatDateTime(event.published_at)}</span> : null}
+                      {(() => {
+                        const topEvents = summary.top_events.filter((e) => e.category === selectedSummaryCategory);
+                        const usingFallback = topEvents.length === 0 && categoryFallbackItems.length > 0;
+                        const count = topEvents.length > 0 ? topEvents.length : categoryFallbackItems.length;
+                        return (
+                          <>
+                            <div className="mb-4 flex items-center justify-between">
+                              <p className="font-display text-xs font-semibold uppercase tracking-wide text-apple-linkDark">
+                                {selectedSummaryCategory} events
+                                {usingFallback ? <span className="ml-2 text-[10px] font-normal normal-case tracking-normal text-white/50">（最新相关报道）</span> : null}
+                              </p>
+                              <span className="text-[11px] font-medium text-white/40">{count}</span>
                             </div>
-                          </li>
-                        ))}
-                        {summary.top_events.filter((e) => e.category === selectedSummaryCategory).length === 0 ? (
-                          <li className="text-sm text-white/60">No top events for this category.</li>
-                        ) : null}
-                      </ol>
+                            <ol key={selectedSummaryCategory} className="max-h-[60vh] space-y-3 overflow-y-auto animate-fade-in">
+                              {topEvents.length > 0
+                                ? topEvents.map((event) => (
+                                    <li key={`${event.title}-${event.canonical_url}`} className="rounded-lg bg-apple-darkSurface3 p-3 transition-colors hover:bg-black/40">
+                                      <a className="text-left text-sm font-medium leading-[1.43] text-white hover:text-apple-linkDark" href={event.canonical_url} rel="noreferrer" target="_blank">
+                                        {event.title}
+                                      </a>
+                                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                                        <Badge variant="secondary">{event.category}</Badge>
+                                        {event.source_name ? <span className="text-xs text-white/60">{event.source_name}</span> : null}
+                                        {event.published_at ? <span className="text-xs text-white/40">{formatDateTime(event.published_at)}</span> : null}
+                                      </div>
+                                    </li>
+                                  ))
+                                : categoryFallbackItems.map((item) => (
+                                    <li key={item.id} className="rounded-lg bg-apple-darkSurface3 p-3 transition-colors hover:bg-black/40">
+                                      <a className="text-left text-sm font-medium leading-[1.43] text-white hover:text-apple-linkDark" href={item.canonical_url} rel="noreferrer" target="_blank">
+                                        {item.title}
+                                      </a>
+                                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                                        <Badge variant="secondary">{item.category}</Badge>
+                                        {item.source_name ? <span className="text-xs text-white/60">{item.source_name}</span> : null}
+                                        {item.published_at ? <span className="text-xs text-white/40">{formatDateTime(item.published_at)}</span> : null}
+                                      </div>
+                                    </li>
+                                  ))}
+                              {topEvents.length === 0 && categoryFallbackItems.length === 0 && !categoryFallbackLoading ? (
+                                <li className="text-sm text-white/60">此分类暂无可展示的新闻。</li>
+                              ) : null}
+                              {topEvents.length === 0 && categoryFallbackLoading ? (
+                                <li className="text-sm text-white/40">加载中…</li>
+                              ) : null}
+                            </ol>
+                          </>
+                        );
+                      })()}
                     </>
                   ) : null}
                 </div>
