@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+@layer base {
+  html,
+  body {
+    font-family: "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    letter-spacing: -0.374px;
+  }
+
+  body {
+    margin: 0;
+    background: #f5f5f7;
+    color: #1d1d1f;
+  }
+
+  .dark body {
+    background: #000000;
+    color: #ffffff;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+
+  h1,
+  h2 {
+    letter-spacing: -0.28px;
+  }
+
+  .caption,
+  small {
+    letter-spacing: -0.224px;
+  }
+}
+
+a {
+  color: inherit;
+}
+
+/* Fade-in animation for news cards */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* Stagger children animation */
+.grid > .animate-fade-in:nth-child(1) { animation-delay: 0ms; }
+.grid > .animate-fade-in:nth-child(2) { animation-delay: 40ms; }
+.grid > .animate-fade-in:nth-child(3) { animation-delay: 80ms; }
+.grid > .animate-fade-in:nth-child(4) { animation-delay: 120ms; }
+.grid > .animate-fade-in:nth-child(5) { animation-delay: 160ms; }
+.grid > .animate-fade-in:nth-child(6) { animation-delay: 200ms; }
+.grid > .animate-fade-in:nth-child(n+7) { animation-delay: 240ms; }
+
+/* Thin scrollbar retuned to Apple grays */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #d2d2d7 transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  height: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #d2d2d7;
+  border-radius: 2px;
+}
+
+/* Dark mode scrollbar */
+.dark .scrollbar-thin {
+  scrollbar-color: #424245 transparent;
+}
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #424245;
+}

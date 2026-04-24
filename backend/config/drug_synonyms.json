@@ -1,0 +1,25 @@
+{
+  "groups": [
+    ["bb2121", "idecabtagene vicleucel", "ide-cel", "Abecma"],
+    ["KTE-C19", "axicabtagene ciloleucel", "axi-cel", "Yescarta"],
+    ["CTL019", "tisagenlecleucel", "tisa-cel", "Kymriah"],
+    ["JCAR017", "lisocabtagene maraleucel", "liso-cel", "Breyanzi"],
+    ["KTE-X19", "brexucabtagene autoleucel", "brexu-cel", "Tecartus"],
+    ["LCAR-B38M", "ciltacabtagene autoleucel", "cilta-cel", "Carvykti"],
+    ["obecabtagene autoleucel", "obe-cel", "Aucatzyl"],
+    ["ARI-0001", "varnimcabtagene autoleucel"],
+    ["JWCAR029", "relmacabtagene autoleucel", "relma-cel", "倍诺达"],
+    ["CT103A", "equecabtagene autoleucel", "eque-cel", "伊基奥仑赛"],
+    ["CT053", "zevorcabtagene autoleucel", "zevor-cel", "赛恺泽"],
+    ["FT516", "iPSC-derived NK"],
+    ["FT596", "iPSC-derived CD19 CAR-NK"],
+    ["P-BCMA-101", "bbT369"],
+    ["NexCella", "NXC-201", "HBI0101"],
+    ["bb21217"],
+    ["ALLO-715", "allogeneic anti-BCMA CAR-T"],
+    ["ALLO-501", "ALLO-501A", "cemacabtagene ansegedleucel"],
+    ["PBCAR0191"],
+    ["CTX110", "CTX112"],
+    ["AZD-0120", "AZD0120"]
+  ]
+}

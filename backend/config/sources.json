@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Fierce Biotech",
+    "feed_url": "https://www.fiercebiotech.com/rss/xml",
+    "max_items": 12
+  },
+  {
+    "name": "BioPharma Dive",
+    "feed_url": "https://www.biopharmadive.com/feeds/news/",
+    "max_items": 12
+  },
+  {
+    "name": "GEN",
+    "feed_url": "https://www.genengnews.com/feed/",
+    "max_items": 12
+  },
+  {
+    "name": "Nature Cell Therapies",
+    "feed_url": "https://www.nature.com/subjects/cell-therapies.rss",
+    "max_items": 12
+  }
+]

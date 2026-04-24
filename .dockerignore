@@ -1,0 +1,13 @@
+.git/
+.DS_Store
+**/node_modules/
+**/.next/
+**/__pycache__/
+**/.venv/
+**/.pytest_cache/
+**/*.log
+attime-master/
+attime-master.zip
+claude_memory/
+claude_review/
+.agents/
