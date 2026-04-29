@@ -1,4 +1,4 @@
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from math import ceil
 from typing import Literal
 
@@ -184,10 +184,16 @@ def _values_equal(left: object, right: object) -> bool:
 
 
 def list_news_for_summary(db: Session, summary_date: date, limit: int = 30) -> list[NewsItem]:
-    start, end = _day_bounds(summary_date)
-    same_day_items = db.scalars(
+    # RSS-supplied `published_at` lags wall-clock — early on summary_date there
+    # are often zero same-day items even though many were ingested overnight.
+    # Use a rolling window ending at end-of-summary-date so the summary captures
+    # ~36 hours of fresh coverage; fall through to the global latest only if
+    # even that window is too sparse.
+    _, end = _day_bounds(summary_date)
+    window_start = end - timedelta(hours=36)
+    window_items = db.scalars(
         select(NewsItem)
-        .where(NewsItem.published_at >= start, NewsItem.published_at <= end)
+        .where(NewsItem.published_at >= window_start, NewsItem.published_at <= end)
         .order_by(
             NewsItem.relevance_to_cell_therapy.desc().nullslast(),
             NewsItem.importance_score.desc().nullslast(),
@@ -196,10 +202,10 @@ def list_news_for_summary(db: Session, summary_date: date, limit: int = 30) -> l
         )
         .limit(limit)
     ).all()
-    if len(same_day_items) >= 3:
-        return same_day_items
+    if len(window_items) >= 5:
+        return window_items
 
-    seen_ids = {item.id for item in same_day_items}
+    seen_ids = {item.id for item in window_items}
     latest_items = db.scalars(
         select(NewsItem)
         .where(NewsItem.id.not_in(seen_ids) if seen_ids else true())
@@ -209,9 +215,9 @@ def list_news_for_summary(db: Session, summary_date: date, limit: int = 30) -> l
             NewsItem.published_at.desc(),
             NewsItem.id.desc(),
         )
-        .limit(max(0, limit - len(same_day_items)))
+        .limit(max(0, limit - len(window_items)))
     ).all()
-    return [*same_day_items, *latest_items]
+    return [*window_items, *latest_items]
 
 
 def upsert_daily_summary(
